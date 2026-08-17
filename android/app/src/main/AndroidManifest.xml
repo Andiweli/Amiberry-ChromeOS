@@ -41,6 +41,15 @@
             android:exported="true"
             android:launchMode="singleTop"
             android:theme="@style/Theme.Amiberry.Splash">
+
+            <!-- ChromeOS / desktop: start the root activity as a landscape tablet window. -->
+            <meta-data
+                android:name="WindowManagerPreference:FreeformWindowSize"
+                android:value="tablet" />
+            <meta-data
+                android:name="WindowManagerPreference:FreeformWindowOrientation"
+                android:value="landscape" />
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

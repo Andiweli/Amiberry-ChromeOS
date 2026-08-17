@@ -697,7 +697,19 @@ class SDLGenericMotionListener_API14 implements View.OnGenericMotionListener {
         for (int i = 0; i < pointerCount; i++) {
             int toolType = event.getToolType(i);
 
-            if (toolType == MotionEvent.TOOL_TYPE_MOUSE) {
+            // Amiberry-local ChromeOS captured mouse movement:
+            // Pointer-captured mouse events can arrive as SOURCE_MOUSE_RELATIVE
+            // (and on some ChromeOS/ARC combinations with a non-mouse tool type).
+            // Treat an explicit mouse source as mouse input as well as TOOL_TYPE_MOUSE.
+            final int source = event.getSource();
+            boolean mouseEvent = toolType == MotionEvent.TOOL_TYPE_MOUSE
+                    || (source & InputDevice.SOURCE_MOUSE) == InputDevice.SOURCE_MOUSE;
+            if (Build.VERSION.SDK_INT >= 26 /* Android 8.0 (O) */
+                    && source == InputDevice.SOURCE_MOUSE_RELATIVE) {
+                mouseEvent = true;
+            }
+
+            if (mouseEvent) {
                 switch (action) {
                     case MotionEvent.ACTION_SCROLL:
                         x = event.getAxisValue(MotionEvent.AXIS_HSCROLL, i);
@@ -706,11 +718,21 @@ class SDLGenericMotionListener_API14 implements View.OnGenericMotionListener {
                         consumed = true;
                         break;
 
+                    // Android pointer capture delivers relative mouse motion as
+                    // ACTION_MOVE. Normal uncaptured mouse motion usually arrives
+                    // as ACTION_HOVER_MOVE. Handle both.
+                    case MotionEvent.ACTION_MOVE:
                     case MotionEvent.ACTION_HOVER_MOVE:
                         x = getEventX(event, i);
                         y = getEventY(event, i);
 
-                        SDLActivity.onNativeMouse(0, action, x, y, checkRelativeEvent(event));
+                        boolean relativeMoveEvent = checkRelativeEvent(event);
+                        if (Build.VERSION.SDK_INT >= 26 /* Android 8.0 (O) */
+                                && SDLActivity.getContentView().hasPointerCapture()) {
+                            relativeMoveEvent = true;
+                        }
+
+                        SDLActivity.onNativeMouse(0, action, x, y, relativeMoveEvent);
                         consumed = true;
                         break;
 
@@ -721,7 +743,12 @@ class SDLGenericMotionListener_API14 implements View.OnGenericMotionListener {
                         x = getEventX(event, i);
                         y = getEventY(event, i);
                         if (SDLSurface.beginMouseButtonTransition(event.getButtonState())) {
-                            SDLActivity.onNativeMouse(event.getButtonState(), MotionEvent.ACTION_DOWN, x, y, checkRelativeEvent(event));
+                            boolean relativePressEvent = checkRelativeEvent(event);
+                            if (Build.VERSION.SDK_INT >= 26 /* Android 8.0 (O) */
+                                    && SDLActivity.getContentView().hasPointerCapture()) {
+                                relativePressEvent = true;
+                            }
+                            SDLActivity.onNativeMouse(event.getButtonState(), MotionEvent.ACTION_DOWN, x, y, relativePressEvent);
                         }
                         consumed = true;
                         break;
@@ -730,7 +757,12 @@ class SDLGenericMotionListener_API14 implements View.OnGenericMotionListener {
                         x = getEventX(event, i);
                         y = getEventY(event, i);
                         if (SDLSurface.finishMouseButtonTransition(event.getButtonState())) {
-                            SDLActivity.onNativeMouse(event.getButtonState(), MotionEvent.ACTION_UP, x, y, checkRelativeEvent(event));
+                            boolean relativeReleaseEvent = checkRelativeEvent(event);
+                            if (Build.VERSION.SDK_INT >= 26 /* Android 8.0 (O) */
+                                    && SDLActivity.getContentView().hasPointerCapture()) {
+                                relativeReleaseEvent = true;
+                            }
+                            SDLActivity.onNativeMouse(event.getButtonState(), MotionEvent.ACTION_UP, x, y, relativeReleaseEvent);
                         }
                         consumed = true;
                         break;

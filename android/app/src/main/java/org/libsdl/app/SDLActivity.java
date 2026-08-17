@@ -1484,6 +1484,79 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         return event.isPrintingKey() || event.getKeyCode() == KeyEvent.KEYCODE_SPACE;
     }
 
+    // AMIBERRY_CHROMEOS_TOUCHPAD_TAP_V13
+    // Linux/evdev physical positions used by ChromeOS/Android keyboard events.
+    // KEY_Y is the physical QWERTY top-row Y position; KEY_Z is the bottom-row Z position.
+    // Using these two positions avoids applying a host QWERTZ layout twice.
+    private static final int EVDEV_KEY_Y_POSITION = 21;
+    private static final int EVDEV_KEY_Z_POSITION = 44;
+
+    private static boolean hasSource(int sources, int wanted) {
+        return (sources & wanted) == wanted;
+    }
+
+    private static int combinedInputSources(KeyEvent event, int eventSource) {
+        int sources = eventSource;
+        InputDevice device = event.getDevice();
+        if (device != null) {
+            sources |= device.getSources();
+        }
+        return sources;
+    }
+
+    private static boolean isMouseOrTouchpadKeyEvent(KeyEvent event, int source) {
+        int sources = combinedInputSources(event, source);
+        return hasSource(sources, InputDevice.SOURCE_TOUCHPAD)
+                || hasSource(sources, InputDevice.SOURCE_MOUSE)
+                || hasSource(sources, InputDevice.SOURCE_MOUSE_RELATIVE);
+    }
+
+    private static boolean isTouchpadTapConfirmKey(int keyCode) {
+        return keyCode == KeyEvent.KEYCODE_ENTER
+                || keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER
+                || keyCode == KeyEvent.KEYCODE_DPAD_CENTER;
+    }
+
+    // AMIBERRY_SYNTHETIC_TOUCHPAD_CONFIRM_V14
+    // ChromeOS can synthesize an ENTER-like KeyEvent for a light touchpad tap
+    // without retaining a SOURCE_MOUSE/SOURCE_TOUCHPAD source. A real hardware
+    // Enter key has a physical scan code; synthetic/virtual confirm events have
+    // scanCode 0. Never swallow a real physical Enter solely because of layout.
+    private static boolean isSyntheticTouchpadConfirmEvent(
+            KeyEvent event, int keyCode, int source) {
+        if (!isTouchpadTapConfirmKey(keyCode)) {
+            return false;
+        }
+        if (isMouseOrTouchpadKeyEvent(event, source)) {
+            return true;
+        }
+        return event.getScanCode() == 0;
+    }
+
+    private static int normalizePhysicalKeyboardKeyCode(
+            int keyCode, KeyEvent event, int source, int deviceId) {
+        int sources = combinedInputSources(event, source);
+
+        // Only real keyboard-originated events. Controller buttons are handled
+        // before this point by SDLControllerManager.
+        if (!hasSource(sources, InputDevice.SOURCE_KEYBOARD)
+                || SDLControllerManager.isDeviceSDLJoystick(deviceId)) {
+            return keyCode;
+        }
+
+        // Hardware scan codes are physical positions; Android keyCode is
+        // layout-dependent. Feed SDL the physical QWERTY positions and let
+        // the AmigaOS keymap (English/German/etc.) perform the layout mapping.
+        switch (event.getScanCode()) {
+            case EVDEV_KEY_Y_POSITION:
+                return KeyEvent.KEYCODE_Y;
+            case EVDEV_KEY_Z_POSITION:
+                return KeyEvent.KEYCODE_Z;
+            default:
+                return keyCode;
+        }
+    }
+
     public static boolean handleKeyEvent(View v, int keyCode, KeyEvent event, InputConnection ic) {
         int deviceId = event.getDeviceId();
         int source = event.getSource();
@@ -1538,6 +1611,29 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
                 }
             }
         }
+
+        // ChromeOS notebook touchpads can expose a light tap as an ENTER-like
+        // KeyEvent from a mouse/touchpad source. Never pass that event to the
+        // emulated Amiga keyboard. Optionally convert the DOWN edge into one
+        // guarded left-click pulse instead.
+        // AMIBERRY_TOUCH_CLICK_REMOVED_V14_1
+        // ChromeOS may report a light touchpad tap as an ENTER-like synthetic
+        // key event. Swallow it so it never reaches the Amiga keyboard, but do
+        // not synthesize any mouse button. Real button press/hold/release
+        // semantics stay entirely on SDL's normal physical mouse path.
+        if (isSyntheticTouchpadConfirmEvent(event, keyCode, source)) {
+            if (event.getAction() == KeyEvent.ACTION_DOWN
+                    && event.getRepeatCount() == 0) {
+                Log.i(TAG, "Amiberry v14.1: suppressed synthetic touchpad confirm"
+                        + " keyCode=" + keyCode
+                        + " scanCode=" + event.getScanCode()
+                        + " source=0x" + Integer.toHexString(source)
+                        + " deviceId=" + deviceId);
+            }
+            return true;
+        }
+
+        keyCode = normalizePhysicalKeyboardKeyCode(keyCode, event, source, deviceId);
 
         if (event.getAction() == KeyEvent.ACTION_DOWN) {
             onNativeKeyDown(keyCode);

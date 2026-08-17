@@ -93,7 +93,13 @@ float DPIHandler::get_layout_scale() {
         // Use the larger dimension to ensure consistent scaling regardless of orientation
         // This way portrait and landscape start with the same scale factor
         int max_dim = std::max(bounds.w, bounds.h);
-        float scaling_factor = static_cast<float>(max_dim) / 800.0f;
+
+        // Amiberry-local Android/ChromeOS GUI scale:
+        // Keep the stock DPI-aware model, but render the complete ImGui UI at 70%.
+        constexpr float ANDROID_GUI_LAYOUT_SCALE = 0.70f;
+        float scaling_factor =
+            (static_cast<float>(max_dim) / 800.0f) * ANDROID_GUI_LAYOUT_SCALE;
+
         return (scaling_factor < 1.0f) ? 1.0f : scaling_factor;
     }
     return 1.0f;

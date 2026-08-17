@@ -616,6 +616,19 @@ amiberry_hotkey debugger_key;
 bool lctrl_pressed, rctrl_pressed, lalt_pressed, ralt_pressed, lshift_pressed, rshift_pressed, lgui_pressed, rgui_pressed;
 bool mouse_grabbed = false;
 
+void cap_fps(uint64_t start)
+{
+	const auto end = SDL_GetPerformanceCounter();
+	const auto elapsed_ms = static_cast<float>(end - start) / static_cast<float>(SDL_GetPerformanceFrequency()) * 1000.0f;
+
+	const int refresh_rate = std::clamp(static_cast<int>(sdl_mode.refresh_rate), 50, 60);
+	const float frame_time = 1000.0f / static_cast<float>(refresh_rate);
+	const float delay_time = frame_time - elapsed_ms;
+
+	if (delay_time > 0.0f)
+		SDL_Delay(static_cast<uint32_t>(delay_time));
+}
+
 std::string get_version_string()
 {
 	return VersionStr;
@@ -3431,20 +3444,41 @@ static bool handle_mouse_motion_event(const SDL_Event& event, const AmigaMonitor
 
 	const int midx = get_mouse_index_from_sdl_id(event.motion.which);
 
+#ifdef __ANDROID__
+	// Amiberry-local Android subpixel relative mouse accumulator:
+	// SDL3 mouse motion is floating point. ChromeOS pointer capture can deliver
+	// fractional deltas below one pixel, so keep them until they add up to a
+	// complete guest-mouse step instead of truncating every event to zero.
+	float x = event.motion.x;
+	float y = event.motion.y;
+	float xrel = event.motion.xrel;
+	float yrel = event.motion.yrel;
+	static float android_relative_mouse_fraction[MAX_INPUT_DEVICES][2]{};
+	const int android_fraction_mouse =
+		(midx >= 0 && midx < MAX_INPUT_DEVICES) ? midx : 0;
+#else
 	int32_t x = event.motion.x;
 	int32_t y = event.motion.y;
 	int32_t xrel = event.motion.xrel;
 	int32_t yrel = event.motion.yrel;
+#endif
 
 	// HiDPI / Retina: scale from screen coordinates (points) to drawable pixels.
 	// Only needed for OpenGL path — SDL_RenderCoordinatesFromWindow handles this
 	// internally when the SDL renderer is active.
 	// Scale factors cached per-monitor in update_hidpi_scale(), updated on window resize.
 	if (!mon->amiga_renderer && mon->hidpi_needs_scaling) {
+#ifdef __ANDROID__
+		x *= mon->hidpi_scale_x;
+		xrel *= mon->hidpi_scale_x;
+		y *= mon->hidpi_scale_y;
+		yrel *= mon->hidpi_scale_y;
+#else
 		x = (int32_t)(x * mon->hidpi_scale_x);
 		xrel = (int32_t)(xrel * mon->hidpi_scale_x);
 		y = (int32_t)(y * mon->hidpi_scale_y);
 		yrel = (int32_t)(yrel * mon->hidpi_scale_y);
+#endif
 	}
 
 #ifndef LIBRETRO
@@ -3453,23 +3487,60 @@ static bool handle_mouse_motion_event(const SDL_Event& event, const AmigaMonitor
 		float rx, ry, rx0, ry0;
 		if (SDL_RenderCoordinatesFromWindow(mon->amiga_renderer, (float)x, (float)y, &rx, &ry)) {
 			SDL_RenderCoordinatesFromWindow(mon->amiga_renderer, (float)(x - xrel), (float)(y - yrel), &rx0, &ry0);
+#ifdef __ANDROID__
+			xrel = rx - rx0;
+			yrel = ry - ry0;
+			x = rx;
+			y = ry;
+#else
 			xrel = (int32_t)(rx - rx0);
 			yrel = (int32_t)(ry - ry0);
 			x = (int32_t)rx;
 			y = (int32_t)ry;
+#endif
 		}
 	}
 #endif
 
 	if (currprefs.input_tablet >= TABLET_MOUSEHACK)
 	{
+#ifdef __ANDROID__
+		// Absolute/tablet mode must not inherit a stale relative remainder.
+		android_relative_mouse_fraction[android_fraction_mouse][0] = 0.0f;
+		android_relative_mouse_fraction[android_fraction_mouse][1] = 0.0f;
+		setmousestate(midx, 0, static_cast<int32_t>(x), 1);
+		setmousestate(midx, 1, static_cast<int32_t>(y), 1);
+#else
 		setmousestate(midx, 0, x, 1);
 		setmousestate(midx, 1, y, 1);
+#endif
 	}
 	else
 	{
+#ifdef __ANDROID__
+		// Amiberry-local ChromeOS physical mouse speed:
+		// Keep touch-generated SDL mouse events at 1:1, but make a real captured
+		// mouse/touchpad slightly faster than the AmigaOS maximum alone allows.
+		constexpr float ANDROID_PHYSICAL_MOUSE_SPEED = 1.15f;
+		if (event.motion.which != SDL_TOUCH_MOUSEID) {
+			xrel *= ANDROID_PHYSICAL_MOUSE_SPEED;
+			yrel *= ANDROID_PHYSICAL_MOUSE_SPEED;
+		}
+
+		float total_x = xrel + android_relative_mouse_fraction[android_fraction_mouse][0];
+		float total_y = yrel + android_relative_mouse_fraction[android_fraction_mouse][1];
+		const int32_t whole_x = static_cast<int32_t>(total_x);
+		const int32_t whole_y = static_cast<int32_t>(total_y);
+		android_relative_mouse_fraction[android_fraction_mouse][0] =
+			total_x - static_cast<float>(whole_x);
+		android_relative_mouse_fraction[android_fraction_mouse][1] =
+			total_y - static_cast<float>(whole_y);
+		setmousestate(midx, 0, whole_x, 0);
+		setmousestate(midx, 1, whole_y, 0);
+#else
 		setmousestate(midx, 0, xrel, 0);
 		setmousestate(midx, 1, yrel, 0);
+#endif
 	}
 
 	return true;

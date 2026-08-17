@@ -4,6 +4,7 @@ import org.gradle.api.provider.ValueSourceParameters
 
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.jetbrains.kotlin.plugin.compose)
 }
 
@@ -59,18 +60,18 @@ def computeAndroidVersionCode = { info, epochMinute ->
     // This ensures version code always increases even with multiple builds per day and across days,
     // while keeping the major.minor.patch version visible in the leading digits.
     // Max value check for 20.0.0 in 10 years: 2,000,000,000 + 5,256,000 = 2.005B (under 2.147B limit).
-    
+
     def calendar = java.util.Calendar.getInstance()
     calendar.setTimeInMillis(epochMinute * 60_000L)
     def minuteOfDay = calendar.get(java.util.Calendar.HOUR_OF_DAY) * 60 + calendar.get(java.util.Calendar.MINUTE)
-    
+
     // Epoch: 2024-01-01
     def epochCalendar = java.util.Calendar.getInstance()
     epochCalendar.set(2024, 0, 1, 0, 0, 0)
     epochCalendar.set(java.util.Calendar.MILLISECOND, 0)
     def diffMillis = calendar.timeInMillis - epochCalendar.timeInMillis
     def daysSinceEpoch = (int) (diffMillis / (1000 * 60 * 60 * 24))
-    
+
     return info.major * 100_000_000 + info.minor * 1_000_000 + info.patch * 10_000 + (daysSinceEpoch * 1440) + minuteOfDay
 }
 
@@ -102,6 +103,17 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
 
+// Android Studio 2025.2.2 / CMake 3.22 on Windows:
+// Keep FetchContent checkouts out of AGP's deeply nested .cxx directory.
+// CMAKE_PROJECT_amiberry_INCLUDE is supported by the project's CMake baseline
+// and injects the path setup only into Amiberry's top-level project().
+def amiberryAndroidCmakeBootstrap = file('../cmake/android-fetchcontent-paths.cmake')
+if (!amiberryAndroidCmakeBootstrap.exists()) {
+    throw new GradleException("Missing Android CMake bootstrap: ${amiberryAndroidCmakeBootstrap}")
+}
+def amiberryAndroidCmakeBootstrapPath =
+        amiberryAndroidCmakeBootstrap.absolutePath.replace('\\', '/')
+
 android {
     namespace = 'com.blitterstudio.amiberry'
     compileSdk = 36
@@ -117,7 +129,10 @@ android {
         externalNativeBuild {
             cmake {
                 cppFlags = ["-std=c++17"]
-                arguments = ["-DANDROID_STL=c++_shared"]
+                arguments = [
+                        "-DANDROID_STL=c++_shared",
+                        "-DCMAKE_PROJECT_amiberry_INCLUDE=${amiberryAndroidCmakeBootstrapPath}"
+                ]
             }
         }
 

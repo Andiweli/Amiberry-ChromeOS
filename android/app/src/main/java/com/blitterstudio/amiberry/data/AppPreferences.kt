@@ -19,6 +19,7 @@ class AppPreferences private constructor(context: Context) {
 	var themeMode = mutableStateOf(prefs.getString(KEY_THEME_MODE, "system") ?: "system")
 		private set
 
+
 	var hasSeenWelcome = mutableStateOf(prefs.getBoolean(KEY_HAS_SEEN_WELCOME, false))
 		private set
 
@@ -105,6 +106,7 @@ class AppPreferences private constructor(context: Context) {
 		prefs.edit { putString(KEY_THEME_MODE, mode) }
 	}
 
+
 	fun setHasSeenWelcome(seen: Boolean) {
 		hasSeenWelcome.value = seen
 		prefs.edit { putBoolean(KEY_HAS_SEEN_WELCOME, seen) }
@@ -114,6 +116,7 @@ class AppPreferences private constructor(context: Context) {
 		private const val PREFS_NAME = "amiberry_prefs"
 		private const val KEY_DYNAMIC_COLOR = "use_dynamic_color"
 		private const val KEY_THEME_MODE = "theme_mode"
+
 		private const val KEY_HAS_SEEN_WELCOME = "has_seen_welcome"
 		private const val KEY_STORAGE_PERMISSION_REQUESTED = "storage_permission_requested"
 		private const val KEY_LAST_WHDLOAD = "last_whdload_path"

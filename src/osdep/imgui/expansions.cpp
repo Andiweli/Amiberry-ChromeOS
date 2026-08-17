@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <map>
+#include <memory>
 #include <utility>
 #include <vector>
 #include <string>
@@ -54,6 +55,18 @@ enum RomDialogSource {
 };
 static RomDialogSource rom_dialog_source = ROM_DIALOG_NONE;
 
+// AMIBERRY_EXPANSION_SAFE_NAME_V13
+// Some platform/feature combinations can expose expansion entries without a
+// friendly display name. Never pass such a pointer to ImGui/_tcsicmp/std::string.
+static const TCHAR* get_expansion_display_name(const expansionromtype& board)
+{
+    if (board.friendlyname && board.friendlyname[0])
+        return board.friendlyname;
+    if (board.name && board.name[0])
+        return board.name;
+    return _T("Unknown Expansion");
+}
+
 static bool is_accelerator_subtype_available(int type, int subtype)
 {
 #ifdef WITH_PPC
@@ -61,10 +74,15 @@ static bool is_accelerator_subtype_available(int type, int subtype)
     (void)subtype;
     return true;
 #else
-    struct uae_prefs candidate = changed_prefs;
-    candidate.cpuboard_type = type;
-    candidate.cpuboard_subtype = subtype;
-    return !cpuboard_is_ppc_accelerator(&candidate);
+    // AMIBERRY_EXPANSION_STACK_FIX_V14
+    // uae_prefs is very large. Keeping a complete temporary copy on the
+    // Android/SDL GUI thread stack can hit the thread stack guard while the
+    // Expansions panel enumerates accelerator subtypes. Preserve the exact
+    // previous semantics, but place the temporary copy on the heap.
+    auto candidate = std::make_unique<uae_prefs>(changed_prefs);
+    candidate->cpuboard_type = type;
+    candidate->cpuboard_subtype = subtype;
+    return !cpuboard_is_ppc_accelerator(candidate.get());
 #endif
 }
 
@@ -261,7 +279,8 @@ static void RefreshExpansionList() {
 
     std::sort(displayed_rom_indices.begin(), displayed_rom_indices.end(),
         [](int a, int b) {
-            return _tcsicmp(expansionroms[a].friendlyname, expansionroms[b].friendlyname) < 0;
+            return _tcsicmp(get_expansion_display_name(expansionroms[a]),
+                           get_expansion_display_name(expansionroms[b])) < 0;
         });
 
     bool current_valid = false;
@@ -332,9 +351,38 @@ static const std::vector<ROMOption>& GetAvailableROMs(int romtype, int romtype_e
 void render_panel_expansions() {
     ImGui::Indent(4.0f);
 
+#ifdef __ANDROID__
+    static bool v14_logged_panel_entry = false;
+    static bool v14_logged_init_begin = false;
+    static bool v14_logged_init_complete = false;
+    static bool v14_logged_accel_begin = false;
+    static bool v14_logged_accel_complete = false;
+    if (!v14_logged_panel_entry) {
+        write_log("v14 Expansions: panel entry\n");
+        v14_logged_panel_entry = true;
+    }
+#endif
+
+    // Defensive validation before this value is ever used as an array index.
+    if (scsiromselectedcatnum < 0 || scsiromselectedcatnum >= IM_ARRAYSIZE(ExpansionCategories))
+        scsiromselectedcatnum = 0;
+
     // Initialize if needed
     if (displayed_rom_indices.empty()) {
+#ifdef __ANDROID__
+        if (!v14_logged_init_begin) {
+            write_log("v14 Expansions: initialization begin\n");
+            v14_logged_init_begin = true;
+        }
+#endif
         InitializeExpansionSelection();
+#ifdef __ANDROID__
+        if (!v14_logged_init_complete) {
+            write_log("v14 Expansions: initialization complete (%zu boards)\n",
+                      displayed_rom_indices.size());
+            v14_logged_init_complete = true;
+        }
+#endif
     }
 
     // Enable/Disable based on emulation state (enable_for_expansion2dlg logic)
@@ -374,9 +422,9 @@ void render_panel_expansions() {
             break;
         }
     }
-    const char *preview_val = (current_combo_idx >= 0)
-                                  ? expansionroms[displayed_rom_indices[current_combo_idx]].friendlyname
-                                  : "Select Board...";
+    const TCHAR *preview_val = (current_combo_idx >= 0)
+                                  ? get_expansion_display_name(expansionroms[displayed_rom_indices[current_combo_idx]])
+                                  : _T("Select Board...");
 
     float avail_w = ImGui::GetContentRegionAvail().x;
     float enable_w = BUTTON_WIDTH * 1.5f;
@@ -394,9 +442,11 @@ void render_panel_expansions() {
             for (int j = 0; j < MAX_DUPLICATE_EXPANSION_BOARDS; j++) {
                 if (is_board_enabled(&changed_prefs, expansionroms[global_idx].romtype, j)) cnt++;
             }
-            std::string name_label = expansionroms[global_idx].friendlyname;
+            const TCHAR *display_name = get_expansion_display_name(expansionroms[global_idx]);
+            std::string name_label = display_name;
             if (expansionroms[global_idx].friendlymanufacturer
-                && _tcsicmp(expansionroms[global_idx].friendlymanufacturer, expansionroms[global_idx].friendlyname) != 0) {
+                && expansionroms[global_idx].friendlymanufacturer[0]
+                && _tcsicmp(expansionroms[global_idx].friendlymanufacturer, display_name) != 0) {
                 name_label += " (";
                 name_label += expansionroms[global_idx].friendlymanufacturer;
                 name_label += ")";
@@ -778,6 +828,12 @@ void render_panel_expansions() {
     EndGroupBox("Expansion Board Settings");
 
     // Accelerator Settings
+#ifdef __ANDROID__
+    if (!v14_logged_accel_begin) {
+        write_log("v14 Expansions: accelerator section begin\n");
+        v14_logged_accel_begin = true;
+    }
+#endif
     BeginGroupBox("Accelerator Board Settings");
     sanitize_accelerator_selection();
     const int type = changed_prefs.cpuboard_type;
@@ -1063,6 +1119,12 @@ void render_panel_expansions() {
         }
     }
     EndGroupBox("Accelerator Board Settings");
+#ifdef __ANDROID__
+    if (!v14_logged_accel_complete) {
+        write_log("v14 Expansions: accelerator section complete\n");
+        v14_logged_accel_complete = true;
+    }
+#endif
 
     BeginGroupBox("Miscellaneous Expansions");
     if (ImGui::BeginTable("MiscTable", 2, ImGuiTableFlags_SizingFixedFit)) {

@@ -1,6 +1,6 @@
 [versions]
 activityCompose = "1.13.0"
-agp = "9.3.1"
+agp = "8.13.2"
 appcompat = "1.7.1"
 compose-bom = "2026.03.01"
 compose-material = "1.7.8"
@@ -14,6 +14,7 @@ androidx-test-runner = "1.7.0"
 google-firebase-crashlytics = "3.0.6"
 google-gms-google-services = "4.4.4"
 gradle-toolchains-foojay-resolver-convention = "1.0.0"
+jetbrains-kotlin-android = "2.3.20"
 jetbrains-kotlin-plugin-compose = "2.3.20"
 junit = "4.13.2"
 lifecycle = "2.10.0"
@@ -50,5 +51,6 @@ review-ktx = { group = "com.google.android.play", name = "review-ktx", version.r
 android-application = { id = "com.android.application", version.ref = "agp" }
 google-firebase-crashlytics = { id = "com.google.firebase.crashlytics", version.ref = "google-firebase-crashlytics" }
 google-gms-google-services = { id = "com.google.gms.google-services", version.ref = "google-gms-google-services" }
+jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "jetbrains-kotlin-android" }
 jetbrains-kotlin-plugin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "jetbrains-kotlin-plugin-compose" }
 foojay-resolver = { id = "org.gradle.toolchains.foojay-resolver-convention", version.ref = "gradle-toolchains-foojay-resolver-convention" }

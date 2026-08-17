@@ -3462,6 +3462,82 @@ static int addresolutions(void)
 			i++;
 		}
 	}
+
+#ifdef __ANDROID__
+	// Amiberry-local Android virtual RTG modes:
+	// Desktop SDL normally exposes a useful list of fullscreen modes, but
+	// Android/ChromeOS can expose only a small host-mode set. Picasso96 is a
+	// virtual framebuffer and does not need its Workbench modes to be limited
+	// to that host fullscreen list, so add common missing RTG resolutions here.
+	static const int android_virtual_rtg_modes[][2] = {
+		{ 640, 512 },
+		{ 800, 600 },
+		{ 1024, 600 },
+		{ 1024, 768 },
+		{ 1152, 864 },
+		{ 1280, 720 },
+		{ 1280, 768 },
+		{ 1280, 800 },
+		{ 1280, 960 },
+		{ 1280, 1024 },
+		{ 1360, 768 },
+		{ 1366, 768 },
+		{ 1440, 900 },
+		{ 1600, 900 },
+		{ 1600, 1200 },
+		{ 1680, 1050 },
+		{ 1920, 1080 },
+		{ 1920, 1200 },
+		{ 2048, 1152 },
+		{ 2560, 1440 }
+	};
+
+	for (const auto& mode : android_virtual_rtg_modes) {
+		const int w = mode[0];
+		const int h = mode[1];
+
+		if (cnt >= MAX_PICASSO_MODES - 1)
+			break;
+		if (w > max_uae_width || h > max_uae_height)
+			continue;
+		// Match the existing P96 automode baseline: at minimum the 8-bit
+		// framebuffer must fit in configured RTG VRAM.
+		if (w * h > gfxmem_bank.allocated_size - 256)
+			continue;
+
+		bool duplicate = false;
+		for (int k = 0; k < cnt; ++k) {
+			if (newmodes[k].res.width == w && newmodes[k].res.height == h) {
+				duplicate = true;
+				break;
+			}
+		}
+		if (duplicate)
+			continue;
+
+		struct PicassoResolution* pr = &newmodes[cnt];
+		if (cnt > 0)
+			memcpy(pr, &newmodes[0], sizeof(struct PicassoResolution));
+		else
+			memset(pr, 0, sizeof(struct PicassoResolution));
+
+		pr->inuse = true;
+		pr->rawmode = false;
+		pr->lace = false;
+		pr->res.width = w;
+		pr->res.height = h;
+		pr->depth = 0;
+		pr->refresh[0] = 60;
+		pr->refresh[1] = 0;
+		pr->refreshtype[0] = 0;
+		_sntprintf(pr->name, sizeof pr->name, _T("%dx%d ANDROID"), w, h);
+
+		size += PSSO_LibResolution_sizeof;
+		size += PSSO_ModeInfo_sizeof * depths;
+		++cnt;
+	}
+#endif
+
 	qsort(newmodes, cnt, sizeof (struct PicassoResolution), resolution_compare);
 
 
