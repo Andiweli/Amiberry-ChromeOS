@@ -81,6 +81,16 @@ For normal development, select the `debug` build variant and build the APK. The 
 android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
+## ❤️ Support
+
+If you enjoy this project and would like to support my work, you can make a small contribution via PayPal.
+
+Your support helps me spend more time maintaining existing projects, fixing bugs, improving compatibility, and working on new features.
+
+[![Support via PayPal](https://img.shields.io/badge/Support%20via-PayPal-0070BA?logo=paypal\&logoColor=white)](https://paypal.me/andiweli)
+
+Thank you for your support!
+
 ## Legal
 
 This repository is a modified Android/ChromeOS-focused fork of **Amiberry**. The original project is developed by the Amiberry contributors and is based on the WinUAE emulation core.
