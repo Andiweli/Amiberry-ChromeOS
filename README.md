@@ -29,6 +29,8 @@ This fork concentrates on running Amiberry as a native Android application with 
 
 <img width="1920" height="1080" alt="amiberry-launcher-2" src="https://github.com/user-attachments/assets/2c35e800-1925-4dc2-a504-f8108e3a4005" />
 
+<img width="1920" height="1080" alt="amiberry" src="https://github.com/user-attachments/assets/bf8e3f2f-7db3-4efb-bdb2-533cd0d7ba6c" />
+
 ## Requirements
 
 | Component | Version / setting |
