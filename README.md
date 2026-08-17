@@ -25,6 +25,10 @@ This fork concentrates on running Amiberry as a native Android application with 
 - Windows-host Android build fixes for Gradle/CMake/Ninja path-length issues and deeply nested SDL dependencies.
 - ARM64 and x86_64 Android builds from the same project.
 
+<img width="1920" height="1014" alt="amiberry-launcher-1" src="https://github.com/user-attachments/assets/bd2af3eb-9a19-42cb-bea0-6dd2c08c9bfe" />
+
+<img width="1920" height="1080" alt="amiberry-launcher-2" src="https://github.com/user-attachments/assets/2c35e800-1925-4dc2-a504-f8108e3a4005" />
+
 ## Requirements
 
 | Component | Version / setting |
@@ -43,20 +47,6 @@ This fork concentrates on running Amiberry as a native Android application with 
 | ABIs | `arm64-v8a`, `x86_64` |
 
 ## Installation and setup
-
-Install an APK built from this repository on a supported Android or ChromeOS device. The release package ID is:
-
-```text
-com.blitterstudio.amiberry
-```
-
-The debug variant uses:
-
-```text
-com.blitterstudio.amiberry.debug
-```
-
-Because the release package ID is the same as the official Android build of Amiberry, Android will only update an existing installation when the APK is signed with a compatible key. If signatures differ, the existing installation may need to be removed first.
 
 After installation, use the Android launcher/file picker to configure Amiberry and import your Amiga files. The Android launcher accepts common Amiga formats including ADF/ADZ, DMS, IPF, HDF, ISO/CUE/CHD, LHA/LZX/LZH, UAE configurations and RP9 files.
 
@@ -88,53 +78,6 @@ For normal development, select the `debug` build variant and build the APK. The 
 ```text
 android/app/build/outputs/apk/debug/app-debug.apk
 ```
-
-## Build from the command line
-
-From the repository root on Windows:
-
-```bat
-cd android
-gradlew.bat :app:assembleDebug --no-configuration-cache
-```
-
-For a release build:
-
-```bat
-cd android
-gradlew.bat :app:assembleRelease --no-configuration-cache
-```
-
-On Unix-like build hosts use `./gradlew` instead of `gradlew.bat`.
-
-A release build is signed only when `android/keystore.properties` exists. Example:
-
-```properties
-storeFile=C:/path/to/amiberry-release.jks
-storePassword=YOUR_STORE_PASSWORD
-keyAlias=YOUR_KEY_ALIAS
-keyPassword=YOUR_KEY_PASSWORD
-```
-
-Without that file, use the debug APK for local testing or sign the produced release APK using your own Android signing workflow.
-
-The release APK is normally generated below:
-
-```text
-android/app/build/outputs/apk/release/
-```
-
-## Windows build notes
-
-Android Studio/AGP creates deeply nested `.cxx` paths and SDL3_image adds several nested third-party dependency trees. This fork includes `android/cmake/android-fetchcontent-paths.cmake`, which relocates FetchContent checkouts to a short directory at the root of the same drive as the source tree and reduces `CMAKE_OBJECT_PATH_MAX` so CMake hashes long object paths earlier.
-
-For example, a checkout on drive `E:` will use a directory similar to:
-
-```text
-E:/.amiberry-fc/<source-hash>/<ABI>-<build-type>
-```
-
-Normally this directory does **not** need to be deleted between builds.
 
 ## Legal
 
