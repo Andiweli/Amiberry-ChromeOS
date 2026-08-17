@@ -1,155 +1,153 @@
-# Amiberry
+# Amiberry for Android / ChromeOS
 
-[![C/C++ CI](https://github.com/BlitterStudio/amiberry/actions/workflows/c-cpp.yml/badge.svg)](https://github.com/BlitterStudio/amiberry/actions/workflows/c-cpp.yml)
-[![Development Builds](https://img.shields.io/badge/Dev%20Builds-nightly.link-orange)](https://nightly.link/BlitterStudio/amiberry/workflows/c-cpp.yml/master)
-[![Discord](https://img.shields.io/badge/Discord-Chat-5865F2?logo=discord&logoColor=white)](https://discord.gg/wWndKTGpGV)
-[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/X8X4FHDY4)
+![Version](https://img.shields.io/badge/Amiberry-8.3.0-blue)
+![Android](https://img.shields.io/badge/Android-10%2B-green)
+![ChromeOS](https://img.shields.io/badge/ChromeOS-optimized-yellow)
+![ABI](https://img.shields.io/badge/ABI-arm64--v8a%20%7C%20x86__64-lightgrey)
+![License](https://img.shields.io/badge/license-GPLv3-blue)
 
-**Optimized Amiga emulator for Linux, macOS, Windows, Android, FreeBSD, and Haiku.**
+**Android / ChromeOS focused port of [Amiberry](https://github.com/BlitterStudio/amiberry), based on Amiberry 8.3.0.**
 
-Built on the WinUAE emulation core, Amiberry delivers full Amiga compatibility across ARM, x86, RISC-V, and LoongArch64 hardware — from a Raspberry Pi to a desktop workstation. Custom JIT compilation for ARM64 and x86-64 provides maximum emulation speed.
+This fork concentrates on running Amiberry as a native Android application with additional fixes and usability changes for Chromebooks. It keeps the Amiberry/WinUAE emulation core while adapting the Android build, launcher, input handling, display modes and desktop-style ChromeOS experience.
 
-## Sponsors
+## Android / ChromeOS changes
 
-A huge thank you to the companies and individuals who support Amiberry development.
+- ChromeOS-friendly launcher startup using a landscape tablet/freeform window preference.
+- Improved physical mouse and captured relative-pointer handling on ChromeOS.
+- Sub-pixel relative mouse movement handling for smoother small movements.
+- Slightly increased physical mouse speed for desktop-style Chromebook use.
+- Smaller Amiberry GUI scaling on large Android/ChromeOS displays.
+- Additional Android RTG/Picasso96 resolutions when SDL does not expose sufficient host fullscreen modes.
+- Correct physical Y/Z keyboard handling for QWERTZ keyboards while leaving the final keyboard layout to AmigaOS.
+- ChromeOS touchpad-generated synthetic Enter/Return events are filtered so a light touchpad tap does not press Return inside AmigaOS.
+- Touchpad tap-to-click emulation is intentionally **not** enabled; normal physical mouse/touchpad press, hold, drag and resize behavior remains on the native SDL input path.
+- Android-specific fix for the `Expansion > Expansions` GUI crash.
+- Windows-host Android build fixes for Gradle/CMake/Ninja path-length issues and deeply nested SDL dependencies.
+- ARM64 and x86_64 Android builds from the same project.
 
-### Certified Partners
+## Requirements
 
-[![Certified Partner](https://amiberry.com/assets/badges/badge-certified-partner.svg)](https://ko-fi.com/midwan)
+| Component | Version / setting |
+|---|---|
+| Source base | Amiberry 8.3.0 |
+| Android Studio | 2025.2.2 tested |
+| Java / JVM | 17 |
+| Android Gradle Plugin | 8.13.2 |
+| Gradle | 8.13 |
+| Kotlin | 2.3.20 |
+| Compile SDK | 36 |
+| Minimum Android | API 29 / Android 10 |
+| Target SDK | 36 |
+| Android NDK | 29.0.14206865 |
+| CMake | 3.22.1 |
+| ABIs | `arm64-v8a`, `x86_64` |
 
-### Partners
+## Installation and setup
 
-[![Partner](https://amiberry.com/assets/badges/badge-partner.svg)](https://ko-fi.com/midwan)
+Install an APK built from this repository on a supported Android or ChromeOS device. The release package ID is:
 
-### Supporters
-
-[![Supporter](https://amiberry.com/assets/badges/badge-supporter.svg)](https://ko-fi.com/midwan)
-
-> **[View full sponsor details on amiberry.com](https://amiberry.com#sponsors)**
-
----
-
-## Commercial Use & Sponsorship
-
-Amiberry is free and open source under the [GPL v3 license](LICENSE).
-You are welcome to use, modify, and redistribute it under those terms.
-
-**If you are shipping a commercial product, paid subscription service, or
-hardware bundle that includes Amiberry**, we ask that you support the project
-financially. Amiberry is maintained by a single developer — the features and
-platforms your product depends on exist because of community and corporate support.
-
-### Corporate Sponsorship Tiers
-
-| Tier | Monthly | Benefits |
-|------|---------|----------|
-| 🥉 Supporter | €50/mo | Named on website, listed in release notes |
-| 🥈 Partner | €150/mo | Logo on website + README, early release access, priority issue responses |
-| 🥇 Certified Partner | €300/mo | Everything above + "Amiberry Certified Partner" badge for your product/marketing |
-
-👉 [Become a corporate sponsor on Ko-Fi](https://ko-fi.com/midwan)
-📧 For custom arrangements, contact: **midwan@gmail.com**
-
-*Individual supporters keep this project alive too —
-[any contribution is appreciated](https://ko-fi.com/midwan).*
-
-> **[Visit amiberry.com](https://amiberry.com)** for the full documentation site.
-
-![Custom shaders and bezel overlays](docs/resources/screenshots/shader-bezel-showcase-1.jpg)
-![CRT shader with monitor bezel](docs/resources/screenshots/shader-bezel-showcase-2.jpg)
-
-## Features
-
-- **JIT Compiler** — Custom just-in-time compilation for ARM64 and x86-64
-- **WHDLoad Support** — Launch WHDLoad titles directly with automatic configuration
-- **Custom Bezels & Shaders** — CRT monitor frames, overlay effects, and GLSL shader support
-- **Modern GUI** — Clean Dear ImGui interface navigable by mouse or gamepad
-- **Drag & Drop** — Drop floppy images, hard files, and config files directly into the emulator
-- **Auto-Update** — Built-in update checker with SHA256-verified downloads
-- **RetroArch Ready** — Seamless controller mapping for RetroArch setups
-
-## Quick Install
-
-### Linux
-
-```bash
-curl -fsSL https://packages.amiberry.com/install.sh | sudo sh
-sudo apt install amiberry
+```text
+com.blitterstudio.amiberry
 ```
 
-Also available via [PPA](https://launchpad.net/~midwan-a/+archive/ubuntu/amiberry) · [COPR](https://copr.fedorainfracloud.org/coprs/midwan/amiberry/) · [Flatpak](https://flathub.org/apps/com.blitterstudio.amiberry) · [AUR](https://aur.archlinux.org/packages/amiberry) · [.deb/.rpm](https://github.com/BlitterStudio/amiberry/releases/latest)
+The debug variant uses:
 
-### macOS
-
-```bash
-brew install --cask amiberry
+```text
+com.blitterstudio.amiberry.debug
 ```
 
-### Windows
+Because the release package ID is the same as the official Android build of Amiberry, Android will only update an existing installation when the APK is signed with a compatible key. If signatures differ, the existing installation may need to be removed first.
 
-Download the [installer or portable ZIP](https://github.com/BlitterStudio/amiberry/releases/latest).  x64 and ARM64 (Windows-on-ARM / Snapdragon X, Copilot+) builds are both published.  The portable ZIP includes the `amiberry.portable` marker, so writable paths stay next to `Amiberry.exe` without extra setup.
+After installation, use the Android launcher/file picker to configure Amiberry and import your Amiga files. The Android launcher accepts common Amiga formats including ADF/ADZ, DMS, IPF, HDF, ISO/CUE/CHD, LHA/LZX/LZH, UAE configurations and RP9 files.
 
-> **Windows ARM64 in a VM (VMware Fusion / Parallels / Hyper-V):** the guest usually has no OpenGL ICD installed, so Amiberry's GL init fails at startup.  Drop Mesa3D's `opengl32.dll` (`mesa-llvmpipe-arm64` from [mmozeiko/build-mesa](https://github.com/mmozeiko/build-mesa/releases)) next to `Amiberry.exe` — that gives you software OpenGL 3.3+ and the GUI comes up.  Native WoA hardware doesn't need this workaround.
+The app-specific external files directory is normally located below:
 
-### Android
-
-Available on [Google Play](https://play.google.com/store/apps/details?id=com.blitterstudio.amiberry) (AArch64 & x86_64 with full ARM64 JIT support).
-
-### FreeBSD
-In order to install amiberry on FreeBSD simply use pkg
-
-```bash
-pkg install amiberry
+```text
+/storage/emulated/0/Android/data/com.blitterstudio.amiberry/files/
 ```
 
-Or if you prefer to install from Source then
+Saved configurations are stored below the app's `Configurations` directory.
+
+On ChromeOS, the port is intended to be used with a physical keyboard and mouse/touchpad. A normal mechanical touchpad click works as a mouse button. A light tap without physically clicking is not converted into an Amiga mouse click.
+
+## Build with Android Studio
+
+Clone the repository:
 
 ```bash
-git clone --depth 1 https://github.com/freebsd/freebsd-ports /usr/ports
-cd /usr/ports/emulators/amiberry
-make install
+git clone https://github.com/Andiweli/Amiberry-ChromeOS.git
+cd Amiberry-ChromeOS
 ```
 
-## Code Signing
+Open the `android` directory as the project in Android Studio and allow Gradle to sync. Android Studio should use JDK 17 and the SDK/NDK/CMake versions listed above.
 
-Release binaries are signed through SignPath. See the [Code signing policy](https://amiberry.com/code-signing-policy) for signing scope, release approval roles, and privacy notes.
+The project contains an Android-specific CMake bootstrap that keeps FetchContent and object paths short on Windows. This avoids common Ninja failures caused by deeply nested SDL3/SDL_image dependency paths. Git long-path support is also enabled automatically for the Git processes started by the Android CMake build.
 
-## Documentation
+For normal development, select the `debug` build variant and build the APK. The output is typically:
 
-- **[Getting Started](https://github.com/BlitterStudio/amiberry/wiki/First-Installation)** — First installation guide
-- **[Full Wiki](https://github.com/BlitterStudio/amiberry/wiki)** — Complete documentation
-- **[Build from Source](https://github.com/BlitterStudio/amiberry/wiki/Compile-from-source)** — Compile for your platform
-- **[Troubleshooting](https://github.com/BlitterStudio/amiberry/wiki/Troubleshooting)** — Common issues and solutions
-
-## Building from Source
-
-```bash
-cmake -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build -j$(nproc)
+```text
+android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
-See the [build guide](https://github.com/BlitterStudio/amiberry/wiki/Compile-from-source) for platform-specific instructions, dependencies, and build options.
+## Build from the command line
 
-## Contributing
+From the repository root on Windows:
 
-Contributions are welcome — bug reports, feature suggestions, and pull requests all help make Amiberry better.
+```bat
+cd android
+gradlew.bat :app:assembleDebug --no-configuration-cache
+```
 
-1. Fork the repository
-2. Create your feature branch: `git checkout -b feature/my-feature`
-3. Commit your changes: `git commit -m 'Add my feature'`
-4. Push to the branch: `git push origin feature/my-feature`
-5. Open a Pull Request
+For a release build:
 
-## Community
+```bat
+cd android
+gradlew.bat :app:assembleRelease --no-configuration-cache
+```
 
-[![Discord](https://img.shields.io/badge/Discord-Join%20Chat-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/wWndKTGpGV)
-[![Mastodon](https://img.shields.io/badge/Mastodon-Follow-6364FF?style=for-the-badge&logo=mastodon&logoColor=white)](https://mastodon.social/@midwan)
-[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support-FF5E5B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/X8X4FHDY4)
+On Unix-like build hosts use `./gradlew` instead of `gradlew.bat`.
 
-## License
+A release build is signed only when `android/keystore.properties` exists. Example:
 
-Amiberry is licensed under the [GNU General Public License v3.0](LICENSE).
+```properties
+storeFile=C:/path/to/amiberry-release.jks
+storePassword=YOUR_STORE_PASSWORD
+keyAlias=YOUR_KEY_ALIAS
+keyPassword=YOUR_KEY_PASSWORD
+```
 
----
+Without that file, use the debug APK for local testing or sign the produced release APK using your own Android signing workflow.
 
-Supported by [JetBrains](https://jb.gg/OpenSourceSupport).
+The release APK is normally generated below:
+
+```text
+android/app/build/outputs/apk/release/
+```
+
+## Windows build notes
+
+Android Studio/AGP creates deeply nested `.cxx` paths and SDL3_image adds several nested third-party dependency trees. This fork includes `android/cmake/android-fetchcontent-paths.cmake`, which relocates FetchContent checkouts to a short directory at the root of the same drive as the source tree and reduces `CMAKE_OBJECT_PATH_MAX` so CMake hashes long object paths earlier.
+
+For example, a checkout on drive `E:` will use a directory similar to:
+
+```text
+E:/.amiberry-fc/<source-hash>/<ABI>-<build-type>
+```
+
+Normally this directory does **not** need to be deleted between builds.
+
+## Legal
+
+This repository is a modified Android/ChromeOS-focused fork of **Amiberry**. The original project is developed by the Amiberry contributors and is based on the WinUAE emulation core.
+
+Amiberry and this fork are distributed under the **GNU General Public License v3.0**. See [LICENSE](LICENSE) for the complete license text. Source modifications distributed from this repository remain subject to those license terms.
+
+No proprietary AmigaOS, Kickstart ROM, Workbench installation or commercial game/software data is provided by this project. Users are responsible for supplying any required ROMs, operating-system files and software themselves and for having the necessary rights to use them.
+
+Amiga and related names, software and trademarks belong to their respective owners. This Android/ChromeOS port is not an official product of those rights holders.
+
+## Upstream
+
+Original Amiberry project: [BlitterStudio/amiberry](https://github.com/BlitterStudio/amiberry)
+
+This repository exists specifically for the Android/ChromeOS port and its platform-specific adaptations.
